@@ -27,13 +27,13 @@ Enrich project documentation and document the frontend architecture.
 Set up the Docker infrastructure, the FastAPI backend in `backend/` using `uv`, and start/stop scripts in `scripts/`.
 
 ### Substeps
-- [ ] Initialize Python backend environment in `backend/` using `uv` (`pyproject.toml` with `fastapi`, `uvicorn`, `pydantic`, `httpx`, `pytest`).
-- [ ] Create basic FastAPI application in `backend/main.py` with `GET /api/health` endpoint and static file mount for testing.
-- [ ] Write `Dockerfile` setting up Python, `uv`, port 3000 exposure, and FastAPI server command.
-- [ ] Create cross-platform lifecycle scripts in `scripts/`:
+- [x] Initialize Python backend environment in `backend/` using `uv` (`pyproject.toml` with `fastapi`, `uvicorn`, `pydantic`, `httpx`, `pytest`).
+- [x] Create basic FastAPI application in `backend/main.py` with `GET /api/health` endpoint and static file mount for testing.
+- [x] Write `Dockerfile` setting up Python, `uv`, port 3000 exposure, and FastAPI server command.
+- [x] Create cross-platform lifecycle scripts in `scripts/`:
   - `scripts/start.sh` and `scripts/stop.sh` (Mac / Linux)
   - `scripts/start.bat` and `scripts/stop.bat` (Windows)
-- [ ] Update `backend/AGENTS.md` and `scripts/AGENTS.md` to document implementation details.
+- [x] Update `backend/AGENTS.md` and `scripts/AGENTS.md` to document implementation details.
 
 ### Testing & Verification
 - Unit test: Run `pytest` in `backend/` to verify `GET /api/health`.
