@@ -51,10 +51,10 @@ Set up the Docker infrastructure, the FastAPI backend in `backend/` using `uv`, 
 Build the Next.js frontend statically and serve it from the FastAPI backend at `/`.
 
 ### Substeps
-- [ ] Configure `frontend/next.config.ts` with `output: 'export'` and `images: { unoptimized: true }`.
-- [ ] Update `Dockerfile` to use a multi-stage build: Stage 1 builds the static export (`frontend/out`), Stage 2 copies `out/` into FastAPI static directory.
-- [ ] Configure FastAPI in `backend/main.py` to serve static assets and fallback to `index.html` at `/`.
-- [ ] Update scripts if necessary to support local dev build and containerized runtime.
+- [x] Configure `frontend/next.config.ts` with `output: 'export'` and `images: { unoptimized: true }`.
+- [x] Update `Dockerfile` to use a multi-stage build: Stage 1 builds the static export (`frontend/out`), Stage 2 copies `out/` into FastAPI static directory.
+- [x] Configure FastAPI in `backend/main.py` to serve static assets and fallback to `index.html` at `/`.
+- [x] Update scripts if necessary to support local dev build and containerized runtime.
 
 ### Testing & Verification
 - Run `npm run build` in `frontend/` to ensure clean static export without errors.

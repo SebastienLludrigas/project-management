@@ -20,14 +20,23 @@ async def health_check():
     return {"status": "ok"}
 
 
-# Determine static files directory (frontend out/ or backend static/)
-static_dir_frontend = Path(__file__).parent.parent / "frontend" / "out"
-static_dir_backend = Path(__file__).parent / "static"
+# Determine static files directory
+candidates = [
+    os.environ.get("STATIC_DIR"),
+    Path(__file__).parent.parent / "frontend" / "out",
+    Path(__file__).parent / "static",
+]
 
-if static_dir_frontend.exists() and (static_dir_frontend / "index.html").exists():
-    app.mount("/", StaticFiles(directory=str(static_dir_frontend), html=True), name="static")
-elif static_dir_backend.exists():
-    app.mount("/", StaticFiles(directory=str(static_backend := static_dir_backend), html=True), name="static")
+static_path = None
+for candidate in candidates:
+    if candidate:
+        p = Path(candidate)
+        if p.exists() and (p / "index.html").exists():
+            static_path = p
+            break
+
+if static_path:
+    app.mount("/", StaticFiles(directory=str(static_path), html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn
