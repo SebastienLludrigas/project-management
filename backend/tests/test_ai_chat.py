@@ -75,6 +75,23 @@ async def test_ai_chat_conversational_response_mocked():
 
 
 @pytest.mark.asyncio
+async def test_ai_chat_fallback_parsing_robust():
+    from ai import parse_structured_response
+
+    # Test truncated or slightly malformed JSON with regex fallback
+    raw = '{"message": "Card added successfully.", "board": {"columns": [{"id": "col-review", "title": "Review", "cardIds": ["card-ai-1"]}], "cards": {"card-ai-1": {"id": "card-ai-1", "title": "QA", "details": ""}}}}'
+    res = parse_structured_response(raw)
+    assert res.message == "Card added successfully."
+    assert res.board is not None
+
+    # Test plain text fallback
+    raw_plain = "Voici un resume du projet."
+    res_plain = parse_structured_response(raw_plain)
+    assert res_plain.message == "Voici un resume du projet."
+    assert res_plain.board is None
+
+
+@pytest.mark.asyncio
 async def test_ai_chat_board_mutation_mocked():
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"

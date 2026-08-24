@@ -14,12 +14,17 @@ frontend/
 │   │   └── page.tsx            # Main page mounting KanbanBoard
 │   ├── components/
 │   │   ├── KanbanBoard.tsx     # Root Kanban container, DnD context, state & event orchestration
+│   │   ├── KanbanBoard.test.tsx# Unit tests for KanbanBoard component
 │   │   ├── KanbanColumn.tsx    # Droppable column container, editable title, sortable cards list
 │   │   ├── KanbanCard.tsx      # Draggable card item with useSortable and delete action
 │   │   ├── KanbanCardPreview.tsx # Drag overlay visual representation
-│   │   ├── NewCardForm.tsx     # Inline form to create cards per column
-│   │   └── KanbanBoard.test.tsx# Unit tests for KanbanBoard component
+│   │   ├── KanbanChatSidebar.tsx # AI chat assistant sidebar with dynamic board updates
+│   │   ├── KanbanChatSidebar.test.tsx # Unit tests for AI chat sidebar
+│   │   ├── LoginForm.tsx       # Authentication login form
+│   │   ├── LoginForm.test.tsx  # Unit tests for login form
+│   │   └── NewCardForm.tsx     # Inline form to create cards per column
 │   ├── lib/
+│   │   ├── api.ts              # REST API client for auth, board, and AI endpoints
 │   │   ├── kanban.ts           # Types (Card, Column, BoardData), initialData, moveCard logic
 │   │   └── kanban.test.ts      # Unit tests for kanban helper functions
 │   └── test/

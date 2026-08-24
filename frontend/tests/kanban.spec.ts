@@ -65,6 +65,20 @@ test("moves a card between columns", async ({ page }) => {
   await expect(targetColumn.getByTestId("card-card-1")).toBeVisible();
 });
 
+test("toggles AI chat sidebar and interacts with assistant", async ({ page }) => {
+  await login(page);
+  const sidebar = page.locator('[data-testid="ai-chat-sidebar"]');
+  await expect(sidebar).not.toBeVisible();
+
+  // Open sidebar
+  await page.getByRole("button", { name: /ai assistant/i }).click();
+  await expect(sidebar).toBeVisible();
+
+  // Close sidebar
+  await page.getByRole("button", { name: /fermer le chat/i }).click();
+  await expect(sidebar).not.toBeVisible();
+});
+
 test("signs out and returns to login screen", async ({ page }) => {
   await login(page);
   await page.getByRole("button", { name: /sign out/i }).click();

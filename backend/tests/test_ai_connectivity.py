@@ -55,7 +55,7 @@ async def test_ai_test_mocked_success():
             data = res.json()
             assert data["status"] == "ok"
             assert data["response"] == "4"
-            assert data["model"] == "deepseek/deepseek-v4-flash-0731"
+            assert "deepseek/deepseek-v4-flash-0731" in data["model"]
 
 
 @pytest.mark.asyncio

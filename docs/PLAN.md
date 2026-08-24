@@ -191,10 +191,10 @@ Enable the backend AI endpoint to receive board JSON + conversation history, ret
 Add a sleek AI chat sidebar to the web app with real-time Kanban board updates.
 
 ### Substeps
-- [ ] Create `KanbanChatSidebar.tsx` matching the design system (`#ecad0a`, `#209dd7`, `#753991`, `#032147`, `#888888`).
-- [ ] Implement chat conversation UI: message thread, input box, loading spinner, and quick suggestion prompts.
-- [ ] Wire sidebar to `POST /api/ai/chat` and update parent `KanbanBoard` state immediately when AI modifies the board.
-- [ ] Update documentation (`README.md`, `docs/`, `AGENTS.md` files) to reflect the finished MVP.
+- [x] Create `KanbanChatSidebar.tsx` matching the design system (`#ecad0a`, `#209dd7`, `#753991`, `#032147`, `#888888`).
+- [x] Implement chat conversation UI: message thread, input box, loading spinner, and quick suggestion prompts.
+- [x] Wire sidebar to `POST /api/ai/chat` and update parent `KanbanBoard` state immediately when AI modifies the board.
+- [x] Update documentation (`README.md`, `docs/`, `AGENTS.md` files) to reflect the finished MVP.
 
 ### Testing & Verification
 - Run full test suite: `npm run test:all` and `pytest`.
