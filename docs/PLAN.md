@@ -132,10 +132,10 @@ Implement FastAPI routes to read and update the Kanban board for authenticated u
 Connect the frontend React components to the FastAPI backend API for persistent Kanban management.
 
 ### Substeps
-- [ ] Create API client service in `frontend/src/lib/api.ts` handling Bearer token injection and error handling.
-- [ ] Update `KanbanBoard.tsx` to load board data from `GET /api/board` upon authentication.
-- [ ] Sync board updates (`PUT /api/board`) on card drag-and-drop, column rename, card creation, and card deletion.
-- [ ] Add subtle loading and error feedback states in the UI.
+- [x] Create API client service in `frontend/src/lib/api.ts` handling Bearer token injection and error handling.
+- [x] Update `KanbanBoard.tsx` to load board data from `GET /api/board` upon authentication.
+- [x] Sync board updates (`PUT /api/board`) on card drag-and-drop, column rename, card creation, and card deletion.
+- [x] Add subtle loading and error feedback states in the UI.
 
 ### Testing & Verification
 - Run `npm run test:unit` to verify updated React hooks/components.

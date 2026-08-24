@@ -26,14 +26,19 @@ test("signs in and displays the kanban board with 5 columns", async ({ page }) =
   await expect(page.getByText(/signed in as/i)).toBeVisible();
 });
 
-test("adds a card to a column", async ({ page }) => {
+test("adds a card to a column and persists across page reload", async ({ page }) => {
   await login(page);
   const firstColumn = page.locator('[data-testid^="column-"]').first();
   await firstColumn.getByRole("button", { name: /add a card/i }).click();
-  await firstColumn.getByPlaceholder("Card title").fill("Playwright card");
-  await firstColumn.getByPlaceholder("Details").fill("Added via e2e.");
+  await firstColumn.getByPlaceholder("Card title").fill("Persisted E2E Card");
+  await firstColumn.getByPlaceholder("Details").fill("Verified via backend SQLite.");
   await firstColumn.getByRole("button", { name: /add card/i }).click();
-  await expect(firstColumn.getByText("Playwright card")).toBeVisible();
+  await expect(firstColumn.getByText("Persisted E2E Card")).toBeVisible();
+
+  // Reload page to verify backend SQLite persistence
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Kanban Studio" })).toBeVisible();
+  await expect(page.getByText("Persisted E2E Card")).toBeVisible();
 });
 
 test("moves a card between columns", async ({ page }) => {

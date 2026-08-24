@@ -1,13 +1,29 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { render, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { KanbanBoard } from "@/components/KanbanBoard";
+import { initialData } from "@/lib/kanban";
 
 const getFirstColumn = () => screen.getAllByTestId(/column-/i)[0];
 
 describe("KanbanBoard", () => {
   beforeEach(() => {
     localStorage.clear();
+    vi.restoreAllMocks();
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (typeof url === "string" && url.includes("/api/board")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => initialData,
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({}),
+      });
+    });
   });
 
   it("renders login form when unauthenticated", () => {
@@ -23,15 +39,20 @@ describe("KanbanBoard", () => {
       localStorage.setItem("kanban_user", "test-user");
     });
 
-    it("renders five columns and signed in user", () => {
+    it("renders five columns and signed in user", async () => {
       render(<KanbanBoard />);
-      expect(screen.getAllByTestId(/column-/i)).toHaveLength(5);
+      await waitFor(() => {
+        expect(screen.getAllByTestId(/column-/i)).toHaveLength(5);
+      });
       expect(screen.getByText(/signed in as/i)).toBeInTheDocument();
       expect(screen.getByText("test-user")).toBeInTheDocument();
     });
 
     it("signs out the user when sign out button is clicked", async () => {
       render(<KanbanBoard />);
+      await waitFor(() => {
+        expect(screen.getAllByTestId(/column-/i)).toHaveLength(5);
+      });
       const signOutButton = screen.getByRole("button", { name: /sign out/i });
       await userEvent.click(signOutButton);
 
@@ -41,6 +62,9 @@ describe("KanbanBoard", () => {
 
     it("renames a column", async () => {
       render(<KanbanBoard />);
+      await waitFor(() => {
+        expect(screen.getAllByTestId(/column-/i)).toHaveLength(5);
+      });
       const column = getFirstColumn();
       const input = within(column).getByLabelText("Column title");
       await userEvent.clear(input);
@@ -50,6 +74,9 @@ describe("KanbanBoard", () => {
 
     it("adds and removes a card", async () => {
       render(<KanbanBoard />);
+      await waitFor(() => {
+        expect(screen.getAllByTestId(/column-/i)).toHaveLength(5);
+      });
       const column = getFirstColumn();
       const addButton = within(column).getByRole("button", {
         name: /add a card/i,
