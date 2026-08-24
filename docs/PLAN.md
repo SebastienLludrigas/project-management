@@ -72,11 +72,11 @@ Build the Next.js frontend statically and serve it from the FastAPI backend at `
 Implement authentication requiring dummy credentials (`user` / `password`) returning a Bearer token.
 
 ### Substeps
-- [ ] Create auth router in `backend/auth.py` with `POST /api/auth/login` validating `user` / `password` and issuing a Bearer token.
-- [ ] Add dependency in FastAPI to validate Bearer token for protected endpoints.
-- [ ] Create login component / screen in frontend matching the design tokens (`#032147`, `#209dd7`, `#753991`, `#ecad0a`).
-- [ ] Store Bearer token in client state (`localStorage`) and add a logout button in the header.
-- [ ] Guard the Kanban board so unauthenticated users see the login screen first.
+- [x] Create auth router in `backend/auth.py` with `POST /api/auth/login` validating `user` / `password` and issuing a Bearer token.
+- [x] Add dependency in FastAPI to validate Bearer token for protected endpoints.
+- [x] Create login component / screen in frontend matching the design tokens (`#032147`, `#209dd7`, `#753991`, `#ecad0a`).
+- [x] Store Bearer token in client state (`localStorage`) and add a logout button in the header.
+- [x] Guard the Kanban board so unauthenticated users see the login screen first.
 
 ### Testing & Verification
 - Backend tests: `pytest` verifying valid credentials return a token, invalid credentials return 401.

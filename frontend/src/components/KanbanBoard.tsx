@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -13,11 +13,25 @@ import {
 } from "@dnd-kit/core";
 import { KanbanColumn } from "@/components/KanbanColumn";
 import { KanbanCardPreview } from "@/components/KanbanCardPreview";
+import { LoginForm } from "@/components/LoginForm";
 import { createId, initialData, moveCard, type BoardData } from "@/lib/kanban";
 
 export const KanbanBoard = () => {
   const [board, setBoard] = useState<BoardData>(() => initialData);
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [username, setUsername] = useState<string>("");
+  const [isInitializing, setIsInitializing] = useState<boolean>(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem("kanban_token");
+    const storedUser = localStorage.getItem("kanban_user");
+    if (token) {
+      setIsAuthenticated(true);
+      setUsername(storedUser || "user");
+    }
+    setIsInitializing(false);
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -26,6 +40,29 @@ export const KanbanBoard = () => {
   );
 
   const cardsById = useMemo(() => board.cards, [board.cards]);
+
+  const handleLoginSuccess = (_token: string, user: string) => {
+    setIsAuthenticated(true);
+    setUsername(user);
+  };
+
+  const handleLogout = async () => {
+    const token = localStorage.getItem("kanban_token");
+    if (token) {
+      try {
+        await fetch("/api/auth/logout", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } catch {
+        // Ignore network error on logout
+      }
+    }
+    localStorage.removeItem("kanban_token");
+    localStorage.removeItem("kanban_user");
+    setIsAuthenticated(false);
+    setUsername("");
+  };
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveCardId(event.active.id as string);
@@ -89,6 +126,14 @@ export const KanbanBoard = () => {
     });
   };
 
+  if (isInitializing) {
+    return null;
+  }
+
+  if (!isAuthenticated) {
+    return <LoginForm onLoginSuccess={handleLoginSuccess} />;
+  }
+
   const activeCard = activeCardId ? cardsById[activeCardId] : null;
 
   return (
@@ -111,13 +156,27 @@ export const KanbanBoard = () => {
                 and capture quick notes without getting buried in settings.
               </p>
             </div>
-            <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--surface)] px-5 py-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--gray-text)]">
-                Focus
-              </p>
-              <p className="mt-2 text-lg font-semibold text-[var(--primary-blue)]">
-                One board. Five columns. Zero clutter.
-              </p>
+            <div className="flex flex-col items-end gap-3">
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-[var(--gray-text)]">
+                  Signed in as <strong className="text-[var(--navy-dark)]">{username}</strong>
+                </span>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1 text-xs font-semibold text-[var(--secondary-purple)] transition hover:border-[var(--secondary-purple)]"
+                >
+                  Sign out
+                </button>
+              </div>
+              <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--surface)] px-5 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--gray-text)]">
+                  Focus
+                </p>
+                <p className="mt-2 text-lg font-semibold text-[var(--primary-blue)]">
+                  One board. Five columns. Zero clutter.
+                </p>
+              </div>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-4">
