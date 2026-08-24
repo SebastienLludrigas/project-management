@@ -113,10 +113,10 @@ Design SQLite database schema for persisting users and the Kanban board JSON str
 Implement FastAPI routes to read and update the Kanban board for authenticated users.
 
 ### Substeps
-- [ ] Create SQLite database helper in `backend/database.py` with auto-creation of database file and tables on startup.
-- [ ] Implement `GET /api/board` returning the authenticated user's board (auto-seeded with default data if empty).
-- [ ] Implement `PUT /api/board` updating the authenticated user's board state.
-- [ ] Add Pydantic models for validation of `Card`, `Column`, and `BoardData`.
+- [x] Create SQLite database helper in `backend/database.py` with auto-creation of database file and tables on startup.
+- [x] Implement `GET /api/board` returning the authenticated user's board (auto-seeded with default data if empty).
+- [x] Implement `PUT /api/board` updating the authenticated user's board state.
+- [x] Add Pydantic models for validation of `Card`, `Column`, and `BoardData`.
 
 ### Testing & Verification
 - Write comprehensive `pytest` test suite in `backend/tests/test_board.py` testing DB initialization, default seed, fetch, update, and auth protection.

@@ -1,12 +1,24 @@
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from auth import router as auth_router
+from board import router as board_router
+from database import init_db
 
-app = FastAPI(title="Kanban Project Management API", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+
+app = FastAPI(
+    title="Kanban Project Management API", version="0.1.0", lifespan=lifespan
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -17,6 +29,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(board_router)
 
 
 @app.get("/api/health")
