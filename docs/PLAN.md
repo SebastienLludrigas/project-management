@@ -170,12 +170,12 @@ Establish and verify communication with OpenRouter using the `deepseek/deepseek-
 Enable the backend AI endpoint to receive board JSON + conversation history, returning structured responses with optional board mutations.
 
 ### Substeps
-- [ ] Define Structured Output Pydantic schemas for the AI response:
+- [x] Define Structured Output Pydantic schemas for the AI response:
   - `message`: Assistant conversational response.
   - `board`: Optional updated `BoardData` object reflecting requested modifications.
-- [ ] Build system prompt enforcing schema adherence, preserving existing cards/columns unless instructed, and applying board operations.
-- [ ] Implement `POST /api/ai/chat` endpoint taking `{ messages: [...], board: BoardData }`.
-- [ ] Automatically persist updated board in SQLite if the AI returns an updated board state.
+- [x] Build system prompt enforcing schema adherence, preserving existing cards/columns unless instructed, and applying board operations.
+- [x] Implement `POST /api/ai/chat` endpoint taking `{ messages: [...], board: BoardData }`.
+- [x] Automatically persist updated board in SQLite if the AI returns an updated board state.
 
 ### Testing & Verification
 - Unit test AI output parsing with mock JSON payloads and live test cases (e.g., "Add card 'Deploy' to Review").

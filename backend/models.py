@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -17,6 +17,21 @@ class Column(BaseModel):
 class BoardData(BaseModel):
     columns: List[Column]
     cards: Dict[str, Card]
+
+
+class ChatMessage(BaseModel):
+    role: str  # "user", "assistant", "system"
+    content: str
+
+
+class ChatRequest(BaseModel):
+    messages: List[ChatMessage]
+    board: Optional[BoardData] = None
+
+
+class AIChatResponse(BaseModel):
+    message: str
+    board: Optional[BoardData] = None
 
 
 INITIAL_BOARD_DATA: dict = {
