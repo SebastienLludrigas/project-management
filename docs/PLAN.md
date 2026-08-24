@@ -95,9 +95,9 @@ Implement authentication requiring dummy credentials (`user` / `password`) retur
 Design SQLite database schema for persisting users and the Kanban board JSON structure.
 
 ### Substeps
-- [ ] Design SQLite schema with `users` and `boards` tables (storing `user_id`, board JSON `data`, and timestamps).
-- [ ] Document the schema, migrations, and data guarantees in `docs/DATABASE.md`.
-- [ ] Confirm alignment with frontend `BoardData` structure (`columns`, `cards`).
+- [x] Design SQLite schema with `users` and `boards` tables (storing `user_id`, board JSON `data`, and timestamps).
+- [x] Document the schema, migrations, and data guarantees in `docs/DATABASE.md`.
+- [x] Confirm alignment with frontend `BoardData` structure (`columns`, `cards`).
 
 ### Testing & Verification
 - Validate schema constraints with SQLite script / test fixtures.
