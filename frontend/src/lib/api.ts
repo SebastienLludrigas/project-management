@@ -3,7 +3,6 @@ import type { BoardData } from "@/lib/kanban";
 export type ChatMessageItem = {
   role: "user" | "assistant" | "system";
   content: string;
-  responseTimeMs?: number;
 };
 
 export type AIChatResponseData = {

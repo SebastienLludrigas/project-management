@@ -166,11 +166,9 @@ export const KanbanChatSidebar = ({
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingElapsed, setLoadingElapsed] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const scrollToBottom = () => {
     if (typeof messagesEndRef.current?.scrollIntoView === "function") {
@@ -183,27 +181,6 @@ export const KanbanChatSidebar = ({
       scrollToBottom();
     }
   }, [messages, isOpen, isLoading]);
-
-  useEffect(() => {
-    if (isLoading) {
-      const startTime = Date.now();
-      setLoadingElapsed(0);
-      loadingTimerRef.current = setInterval(() => {
-        setLoadingElapsed(Math.floor((Date.now() - startTime) / 100) / 10);
-      }, 100);
-    } else {
-      if (loadingTimerRef.current) {
-        clearInterval(loadingTimerRef.current);
-        loadingTimerRef.current = null;
-      }
-      setLoadingElapsed(0);
-    }
-    return () => {
-      if (loadingTimerRef.current) {
-        clearInterval(loadingTimerRef.current);
-      }
-    };
-  }, [isLoading]);
 
   const handleSendMessage = async (textToSend?: string) => {
     const content = (textToSend || input).trim();
@@ -230,13 +207,12 @@ export const KanbanChatSidebar = ({
 
       console.log(
         `%c[AI Chat] Réponse reçue en ${durationSec}s (${Math.round(durationMs)}ms)`,
-        "color: #209dd7; font-weight: bold; font-size: 11px;"
+        "color: #209dd7; font-weight: bold;"
       );
 
       const assistantMessage: ChatMessageItem = {
         role: "assistant",
         content: response.message,
-        responseTimeMs: Math.round(durationMs),
       };
       setMessages([...updatedMessages, assistantMessage]);
 
@@ -324,16 +300,9 @@ export const KanbanChatSidebar = ({
               key={index}
               className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
             >
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-[10px] font-semibold text-[var(--gray-text)] uppercase tracking-wider">
-                  {isUser ? "Vous" : "Assistant"}
-                </span>
-                {!isUser && msg.responseTimeMs !== undefined && (
-                  <span className="text-[10px] font-medium text-[var(--primary-blue)]">
-                    • {(msg.responseTimeMs / 1000).toFixed(2)}s
-                  </span>
-                )}
-              </div>
+              <span className="mb-1 text-[10px] font-semibold text-[var(--gray-text)] uppercase tracking-wider">
+                {isUser ? "Vous" : "Assistant"}
+              </span>
               <div
                 className={`max-w-[90%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                   isUser
@@ -349,21 +318,14 @@ export const KanbanChatSidebar = ({
 
         {isLoading && (
           <div className="flex flex-col items-start">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-semibold text-[var(--primary-blue)] uppercase tracking-wider">
-                Assistant
-              </span>
-              <span className="text-[10px] font-mono text-[var(--gray-text)]">
-                {loadingElapsed.toFixed(1)}s
-              </span>
-            </div>
+            <span className="mb-1 text-[10px] font-semibold text-[var(--primary-blue)] uppercase tracking-wider">
+              Assistant
+            </span>
             <div className="flex items-center gap-2 rounded-2xl border border-[var(--stroke)] bg-white px-4 py-3 text-xs text-[var(--gray-text)] shadow-sm">
               <span className="h-2 w-2 rounded-full bg-[var(--accent-yellow)] animate-bounce" />
               <span className="h-2 w-2 rounded-full bg-[var(--primary-blue)] animate-bounce [animation-delay:0.2s]" />
               <span className="h-2 w-2 rounded-full bg-[var(--secondary-purple)] animate-bounce [animation-delay:0.4s]" />
-              <span className="ml-1">
-                L&apos;IA réfléchit et met à jour le tableau... ({loadingElapsed.toFixed(1)}s)
-              </span>
+              <span className="ml-1">L&apos;IA réfléchit et met à jour le tableau...</span>
             </div>
           </div>
         )}
