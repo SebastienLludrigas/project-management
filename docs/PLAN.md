@@ -151,10 +151,10 @@ Connect the frontend React components to the FastAPI backend API for persistent 
 Establish and verify communication with OpenRouter using the `deepseek/deepseek-v4-flash-0731` model.
 
 ### Substeps
-- [ ] Create AI service client in `backend/ai.py` utilizing `OPENROUTER_API_KEY` from `.env`.
-- [ ] Configure target model `deepseek/deepseek-v4-flash-0731` with OpenRouter endpoint `https://openrouter.ai/api/v1/chat/completions`.
-- [ ] Implement a verification endpoint `POST /api/ai/test` executing a basic prompt (e.g., "2+2").
-- [ ] Write backend unit test verifying OpenRouter API response handling.
+- [x] Create AI service client in `backend/ai.py` utilizing `OPENROUTER_API_KEY` from `.env`.
+- [x] Configure target model `deepseek/deepseek-v4-flash-0731` with OpenRouter endpoint `https://openrouter.ai/api/v1/chat/completions`.
+- [x] Implement a verification endpoint `POST /api/ai/test` executing a basic prompt (e.g., "2+2").
+- [x] Write backend unit test verifying OpenRouter API response handling.
 
 ### Testing & Verification
 - Run `pytest` targeting `test_ai_connectivity.py` with valid API key.

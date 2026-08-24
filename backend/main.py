@@ -1,13 +1,19 @@
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from ai import router as ai_router
 from auth import router as auth_router
 from board import router as board_router
 from database import init_db
+
+# Load environment variables
+load_dotenv(Path(__file__).parent.parent / ".env")
+load_dotenv(Path(__file__).parent / ".env")
 
 
 @asynccontextmanager
@@ -30,6 +36,7 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(board_router)
+app.include_router(ai_router)
 
 
 @app.get("/api/health")
