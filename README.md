@@ -6,7 +6,7 @@ A single-board Kanban web application with an integrated AI assistant capable of
 
 - **Authentication**: Single user sign-in (`user` / `password`) with Bearer token authentication.
 - **Kanban Board**: 5 columns with drag-and-drop card movement, card creation/deletion, and debounced column renaming.
-- **AI Assistant**: Sidebar chat powered by DeepSeek (`deepseek/deepseek-v4-flash-0731`) via OpenRouter, with structured outputs that directly modify the board.
+- **AI Assistant**: Sidebar chat powered by DeepSeek (`deepseek/deepseek-v4-flash-0731:nitro`) via OpenRouter, with structured outputs that directly modify the board.
 - **Persistence**: Embedded SQLite database automatically persisting all user and AI board updates.
 - **Containerized**: Unified Docker container packaging the Next.js static export and FastAPI backend.
 
