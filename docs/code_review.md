@@ -109,6 +109,23 @@ Only `KanbanBoard.test.tsx`, `KanbanChatSidebar.test.tsx`, `LoginForm.test.tsx`,
 - `.env` is never copied into the Docker image (absent from the `Dockerfile`, only passed via `--env-file` at runtime) and stays out of version control (`.gitignore`). Good secret hygiene.
 - The backend test suite covers 401s on all protected routes, SQLite persistence, and degraded AI parsing — a solid confidence level for an MVP.
 
+## Follow-up: AI empty-response investigation (2026-08-26)
+
+While manually verifying Action 7 above, repeated AI chat replies came back as `"Désolé, aucune réponse textuelle n'a été retournée."` even though OpenRouter returned `Status 200` every time (confirmed via Docker logs: call durations of 3.7s-17s, all HTTP 200, no timeouts or provider error bodies).
+
+**Evidence gathered**:
+- A diagnostic log was added in `backend/ai.py` (`chat_ai`) that prints `finish_reason`, the response `message` object's keys, and token `usage` whenever `content` comes back empty, to capture the exact cause if it recurs.
+- ~25 real `POST /api/ai/chat` calls were replayed against the local dev board via curl. The empty-content case was not caught live (the new log never fired), but a clear pattern emerged: request duration climbed steadily as the board grew (4.8s at a small board size, up to 17s once the board reached 26 cards / ~3 KB of JSON).
+- Root cause: the system prompt in `backend/ai.py` requires the model to return the **complete** `BoardData` object on every mutation ("You MUST include the COMPLETE updated BoardData object"), not a diff. As the board grows, the required output grows with it, competing for the same fixed `max_tokens` budget as the model's internal reasoning (DeepSeek reasoning tokens are not capped separately from `max_tokens`).
+
+**Mitigation applied** (see Action summary — both already implemented and test-covered):
+- `backend/ai.py`: `max_tokens` raised from 2048 to 4096; chat history window raised from 10 to 20 messages (matches the frontend's `MAX_HISTORY_MESSAGES` in `KanbanChatSidebar.tsx`, changed from Action 7's original value of 10).
+- The diagnostic log stays in place permanently to confirm `finish_reason` the next time an empty response occurs.
+
+This mitigation reduces the likelihood of hitting the failure mode but is **not a structural guarantee**: the board can keep growing indefinitely, so any fixed `max_tokens` value will eventually become insufficient again, just later. The root cause was never confirmed with hard evidence (`finish_reason == "length"`), only inferred from the duration/board-size correlation.
+
+**Deferred recommendation (backlog, not scheduled)**: replace the full-board round-trip with a diff/operations-based protocol (e.g. `add_card`, `move_card`, `delete_card`, `rename_column`), applied by the backend to the board currently in SQLite rather than trusting a client- or AI-supplied full board. This decouples response size from board size entirely and removes a second, independent risk: today, an AI response that silently omits an existing card while regenerating the whole board causes data loss with no error (partially mitigated by the referential-integrity check from Action 2, which only catches dangling `cardIds`, not disappearing cards). Scope if picked up: a new operations schema in `backend/models.py`, a rewritten system prompt and `parse_structured_response` in `backend/ai.py` (the current tolerant-parsing fallback is designed for a single board object, not an operations list), an operation-application function, and dedicated tests per operation type including invalid references. Deliberately not undertaken now — the scope is a redesign, not a config change, and the existing mitigation plus diagnostic logging is judged sufficient until/unless the bug recurs.
+
 ## Action summary
 
 | # | Priority | File | Action | Status |
@@ -121,3 +138,9 @@ Only `KanbanBoard.test.tsx`, `KanbanChatSidebar.test.tsx`, `LoginForm.test.tsx`,
 | 6 | Low | `frontend/src/components/` | Add unit tests for `NewCardForm` and `KanbanColumn` | Done |
 | 7 | Low | `frontend/src/components/KanbanChatSidebar.tsx` | Trim the chat history sent to the API instead of sending everything | Done |
 | 8 | Optional | `scripts/start.sh` / `start.bat` | Add a Docker volume for SQLite persistence if needed | Done |
+
+## Backlog
+
+| # | Priority | File(s) | Action | Status |
+|---|----------|---------|--------|--------|
+| 9 | Deferred | `backend/models.py`, `backend/ai.py` | Replace full-board AI round-trips with a diff/operations-based protocol (see Follow-up above) | Deferred / Backlog |

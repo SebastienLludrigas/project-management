@@ -12,7 +12,7 @@ type KanbanChatSidebarProps = {
 };
 
 // Mirrors the backend's history window (backend/ai.py) to avoid sending a payload the API discards
-const MAX_HISTORY_MESSAGES = 10;
+const MAX_HISTORY_MESSAGES = 20;
 
 const SUGGESTIONS = [
   "Ajoute une carte 'Tests QA' dans Review",

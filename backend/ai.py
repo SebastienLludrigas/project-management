@@ -36,7 +36,7 @@ async def call_openrouter(
     model: str = DEFAULT_MODEL,
     response_format: Optional[Dict[str, Any]] = None,
     temperature: float = 0.2,
-    max_tokens: int = 2048,
+    max_tokens: int = 4096,
 ) -> Dict[str, Any]:
     api_key = get_api_key()
     headers = {
@@ -235,8 +235,8 @@ CRITICAL RULES:
 4. Do NOT include emojis in your response.
 """
 
-        # Keep last 10 messages to avoid token bloat on long conversations
-        recent_messages = req.messages[-10:] if len(req.messages) > 10 else req.messages
+        # Keep last 20 messages to avoid token bloat on long conversations
+        recent_messages = req.messages[-20:] if len(req.messages) > 20 else req.messages
 
         llm_messages = [{"role": "system", "content": system_prompt}]
         for msg in recent_messages:
@@ -253,6 +253,13 @@ CRITICAL RULES:
         else:
             msg_obj = choices[0].get("message", {})
             raw_content = msg_obj.get("content") or ""
+            if not raw_content:
+                print(
+                    f"[AI Chat] Empty content from OpenRouter. "
+                    f"finish_reason={choices[0].get('finish_reason')!r} "
+                    f"message_keys={list(msg_obj.keys())} "
+                    f"usage={openrouter_response.get('usage')}"
+                )
 
         parsed_response = parse_structured_response(raw_content)
 
