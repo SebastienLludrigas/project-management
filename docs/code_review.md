@@ -1,67 +1,67 @@
-# Revue de code - Kanban Studio
+# Code Review - Kanban Studio
 
-Date : 2026-08-26
-Perimetre : repo entier (`backend/`, `frontend/`, `scripts/`, `Dockerfile`, docs)
-Methode : lecture complete des fichiers source, execution des suites de tests (`uv run pytest`, `npm run test:unit`, `npm run lint`)
+Date: 2026-08-26
+Scope: entire repo (`backend/`, `frontend/`, `scripts/`, `Dockerfile`, docs)
+Method: full read-through of the source files, running the existing test suites (`uv run pytest`, `npm run test:unit`, `npm run lint`)
 
-## Resume
+## Summary
 
-L'application est un MVP Kanban simple et coherent avec les specifications d'`AGENTS.md`. La structure suit fidelement le contrat documente dans `CLAUDE.md` (un seul blob JSON pour le board, duplique en 3 endroits, single-origin serving). Le code est propre, sans sur-ingenierie, et la suite de tests existante passe integralement :
+The application is a clean MVP Kanban board consistent with the spec in `AGENTS.md`. The structure faithfully follows the contract documented in `CLAUDE.md` (one JSON blob for the board, duplicated in three places, single-origin serving). The code is clean and free of over-engineering, and the existing test suite passes in full:
 
-- Backend : `uv run pytest` -> 16/16 tests OK
-- Frontend unit : `npm run test:unit` -> 17/17 tests OK
-- Frontend lint : `npm run lint` -> 1 erreur (voir Action 1)
+- Backend: `uv run pytest` -> 16/16 tests passing
+- Frontend unit: `npm run test:unit` -> 17/17 tests passing
+- Frontend lint: `npm run lint` -> 1 error (see Action 1)
 
-Le point le plus important releve n'est pas un bug actif mais une absence de garde-fou : rien ne verifie que `columns[].cardIds` reste coherent avec `cards`, ni cote backend (Pydantic) ni cote frontend au moment de la sauvegarde. Comme le board est un blob unique reecrit integralement par le PUT et par l'IA (qui genere du JSON librement), c'est le point le plus probable de corruption de donnees silencieuse.
+The most significant finding is not an active bug but a missing safeguard: nothing enforces that `columns[].cardIds` stays consistent with `cards`, neither on the backend (Pydantic) nor on the frontend at save time. Since the board is a single blob rewritten wholesale by both the PUT endpoint and the AI (which generates JSON freely), this is the most likely point of silent data corruption.
 
-## Constats et actions
+## Findings and actions
 
-### 1. Lint frontend en echec (bloquant CI si le lint est un gate)
+### 1. Frontend lint failure (blocking if lint is a CI gate)
 
-`frontend/tests/kanban.spec.ts:3` :
+`frontend/tests/kanban.spec.ts:3`:
 ```ts
 const login = async (page: any) => {
 ```
-`npm run lint` echoue avec `Unexpected any. Specify a different type`.
+`npm run lint` fails with `Unexpected any. Specify a different type`.
 
-**Action** : typer avec `Page` importe de `@playwright/test` :
+**Action**: type it with `Page` imported from `@playwright/test`:
 ```ts
 import { expect, test, type Page } from "@playwright/test";
 const login = async (page: Page) => { ... }
 ```
 
-### 2. Aucune verification d'integrite referentielle sur `BoardData`
+### 2. No referential integrity check on `BoardData`
 
-`backend/models.py` accepte n'importe quelle combinaison de `columns[].cardIds` et `cards` sans validation croisee. Or deux voies alimentent ce modele avec des donnees non fiables :
-- `PUT /api/board` (`backend/board.py`) accepte le board tel quel.
-- La reponse IA (`backend/ai.py:181-184`) valide seulement la forme Pydantic de base, pas la coherence.
+`backend/models.py` accepts any combination of `columns[].cardIds` and `cards` with no cross-field validation. Two paths feed this model with untrusted data:
+- `PUT /api/board` (`backend/board.py`) accepts the board as-is.
+- The AI response (`backend/ai.py:181-184`) only validates basic Pydantic shape, not consistency.
 
-Consequences possibles : un `cardId` reference dans une colonne sans entree correspondante dans `cards` (carte fantome), une meme carte presente dans deux colonnes (duplication visuelle), ou une carte orpheline dans `cards` sans jamais apparaitre dans aucune colonne.
+Possible consequences: a `cardId` referenced in a column with no matching entry in `cards` (ghost card), the same card present in two columns at once (visual duplication), or an orphan card in `cards` that never appears in any column.
 
-Cote frontend, `KanbanBoard.tsx:315` masque silencieusement le symptome :
+On the frontend, `KanbanBoard.tsx:315` silently hides the symptom:
 ```ts
 cards={column.cardIds.map((cardId) => board.cards[cardId]).filter(Boolean)}
 ```
-Ce `filter(Boolean)` evite un crash mais cache l'incoherence au lieu de la signaler ; les cartes fantomes disparaissent sans trace et sans persister de correctif en base.
+This `filter(Boolean)` avoids a crash but hides the inconsistency instead of surfacing it; ghost cards disappear without a trace and without persisting any fix to the database.
 
-**Action** : ajouter un `model_validator(mode="after")` sur `BoardData` dans `backend/models.py` qui verifie que chaque `cardId` de chaque colonne existe dans `cards`, et lever une erreur de validation sinon (rejette le PUT, et fait tomber `parse_structured_response` sur `validated_board = None` pour les reponses IA malformees, ce qui est deja gere). Documenter le comportement attendu (cartes orphelines autorisees ou non) dans `docs/DATABASE.md`.
+**Action**: add a `model_validator(mode="after")` on `BoardData` in `backend/models.py` that checks every `cardId` in every column exists in `cards`, raising a validation error otherwise (rejects the PUT, and makes `parse_structured_response` fall back to `validated_board = None` for malformed AI responses, which is already handled). Document the expected behavior (orphan cards allowed or not) in `docs/DATABASE.md`.
 
-### 3. Echec silencieux de validation du board genere par l'IA
+### 3. Silent failure when validating the AI-generated board
 
-`backend/ai.py:181-184` :
+`backend/ai.py:181-184`:
 ```python
 try:
     validated_board = BoardData.model_validate(board_data)
 except Exception:
     validated_board = None
 ```
-Si le LLM renvoie un `board` dont le contenu textuel du `message` annonce une modification ("carte ajoutee a Review") mais dont le JSON `board` echoue la validation Pydantic, l'utilisateur recoit un message de confirmation alors que rien n'a change en base. Aucune trace n'est loggee pour ce cas precis (contrairement aux autres branches d'erreur du fichier qui utilisent `print(...)`).
+If the LLM returns a `board` whose accompanying `message` announces a change ("card added to Review") but whose JSON `board` fails Pydantic validation, the user gets a confirmation message even though nothing actually changed in the database. Nothing is logged for this specific case (unlike the other error branches in this file, which do use `print(...)`).
 
-**Action** : logger l'exception (`print(f"[AI Chat] board validation failed: {exc}")`) pour permettre le diagnostic, et envisager de renvoyer un message coherent avec l'echec plutot que le message brut du modele quand `validated_board is None` mais que le modele annoncait une modification.
+**Action**: log the exception (`print(f"[AI Chat] board validation failed: {exc}")`) to enable diagnosis, and consider returning a message consistent with the failure instead of the model's raw message when `validated_board is None` but the model claimed a modification.
 
-### 4. CORS permissif combine a `allow_credentials=True`
+### 4. Permissive CORS combined with `allow_credentials=True`
 
-`backend/main.py:29-35` :
+`backend/main.py:29-35`:
 ```python
 app.add_middleware(
     CORSMiddleware,
@@ -71,51 +71,51 @@ app.add_middleware(
     allow_headers=["*"],
 )
 ```
-L'authentification se fait par Bearer token dans l'en-tete `Authorization`, jamais par cookie : `allow_credentials=True` n'apporte donc rien ici et n'est utile que pour les cookies/sessions. Combiner un wildcard d'origine avec les credentials est une configuration a eviter par principe (les specs CORS interdisent d'ailleurs cette combinaison pour les requetes avec cookies, et Starlette echoue silencieusement a renvoyer `*` dans ce cas precis).
+Authentication happens via a Bearer token in the `Authorization` header, never via cookies, so `allow_credentials=True` adds nothing here — it only matters for cookies/sessions. Combining a wildcard origin with credentials is a configuration to avoid on principle (the CORS spec forbids this combination for cookie-bearing requests, and Starlette silently fails to echo back `*` in that case).
 
-**Action** : retirer `allow_credentials=True` (inutile pour un flux Bearer token), ou restreindre `allow_origins` a l'origine reelle de service si le credential doit rester. Vu que le frontend et le backend sont servis en single-origin (cf. `CLAUDE.md`), le CORS pourrait meme etre supprime entierement pour cette app.
+**Action**: remove `allow_credentials=True` (useless for a Bearer token flow), or restrict `allow_origins` to the real serving origin if the credential flag must stay. Since the frontend and backend are served single-origin (per `CLAUDE.md`), CORS could arguably be dropped entirely for this app.
 
-### 5. Pas de limitation de tentatives sur `/api/auth/login`
+### 5. No rate limiting on `/api/auth/login`
 
-`backend/auth.py:29-38` n'a aucun rate limiting. Les identifiants sont volontairement en dur pour le MVP (documente), mais rien n'empeche un brute force trivial si le port est expose au-dela de `localhost`. Faible priorite tant que le deploiement reste strictement local, mais a traiter avant toute exposition reseau.
+`backend/auth.py:29-38` has no rate limiting. Credentials are intentionally hardcoded for the MVP (documented), but nothing prevents trivial brute forcing if the port is ever exposed beyond `localhost`. Low priority as long as the deployment stays strictly local, but worth addressing before any network exposure.
 
-**Action** : si le service doit un jour etre accessible au-dela de `localhost`, ajouter un throttling basique (ex. limite par IP) avant le passage en production.
+**Action**: if the service is ever made reachable beyond `localhost`, add basic throttling (e.g. per-IP limit) before going further.
 
-### 6. Couverture de tests unitaires frontend incomplete sur les composants de presentation
+### 6. Incomplete frontend unit test coverage on presentational components
 
-Seuls `KanbanBoard.test.tsx`, `KanbanChatSidebar.test.tsx`, `LoginForm.test.tsx` et `kanban.test.ts` existent. `KanbanColumn.tsx`, `KanbanCard.tsx`, `NewCardForm.tsx` et `KanbanCardPreview.tsx` ne sont testes qu'indirectement via `KanbanBoard.test.tsx` et les tests e2e Playwright. Le renommage de colonne, la suppression de carte, et la validation du formulaire d'ajout (`NewCardForm.tsx:15-17`, titre requis) n'ont pas de test unitaire isole.
+Only `KanbanBoard.test.tsx`, `KanbanChatSidebar.test.tsx`, `LoginForm.test.tsx`, and `kanban.test.ts` exist. `KanbanColumn.tsx`, `KanbanCard.tsx`, `NewCardForm.tsx`, and `KanbanCardPreview.tsx` are only tested indirectly through `KanbanBoard.test.tsx` and the Playwright e2e tests. Column renaming, card deletion, and the add-card form validation (`NewCardForm.tsx:15-17`, required title) have no isolated unit test.
 
-**Action** : ajouter des tests cibles pour `NewCardForm` (soumission avec titre vide bloquee, reset apres ajout) et `KanbanColumn` (rendu de l'etat vide "Drop a card here", appel de `onDeleteCard`). Priorite basse, le comportement est deja couvert de bout en bout par Playwright.
+**Action**: add targeted tests for `NewCardForm` (blocked submission with empty title, reset after add) and `KanbanColumn` (empty-state "Drop a card here" rendering, `onDeleteCard` call). Low priority, since behavior is already covered end-to-end by Playwright.
 
-### 7. Le payload envoye a `/api/ai/chat` grossit sans borne cote client
+### 7. The payload sent to `/api/ai/chat` grows unbounded on the client
 
-`frontend/src/components/KanbanChatSidebar.tsx:204` envoie tout l'historique `updatedMessages` (jamais tronque cote client) a chaque appel, meme si `backend/ai.py:238` ne garde que les 10 derniers messages pour le LLM. Sur une session de chat tres longue, la bande passante de la requete croit inutilement puisque le backend jette la majorite du payload recu.
+`frontend/src/components/KanbanChatSidebar.tsx:204` sends the entire `updatedMessages` history (never trimmed client-side) on every call, even though `backend/ai.py:238` only keeps the last 10 messages for the LLM. Over a very long chat session, the request payload grows needlessly since the backend discards most of what it receives.
 
-**Action** : tronquer `messages` cote client avant l'appel (ex. `messages.slice(-10)` dans `sendAIChatMessage` ou dans `KanbanChatSidebar`), ce qui evite aussi de dupliquer la constante magique `10` entre frontend et backend sans qu'elle soit visible des deux cotes.
+**Action**: trim `messages` on the client before the call (e.g. `messages.slice(-10)` in `sendAIChatMessage` or in `KanbanChatSidebar`), which also avoids duplicating the magic number `10` between frontend and backend without either side being aware of the other.
 
-### 8. Absence de volume Docker pour la persistance SQLite
+### 8. No Docker volume for SQLite persistence
 
-`scripts/start.sh:34` lance le conteneur sans `-v`, et `CLAUDE.md` documente deja explicitement que les donnees sont perdues a la suppression du conteneur. Ce n'est pas un bug (comportement voulu pour le MVP), mais c'est un ecart facile a corriger si la persistance entre redemarrages devient un besoin reel pour un outil de gestion de projet.
+`scripts/start.sh:34` runs the container without `-v`, and `CLAUDE.md` already documents explicitly that data is lost when the container is removed. This is not a bug (intended MVP behavior), but it is an easy gap to close if persistence across restarts becomes a real need for a project management tool.
 
-**Action (optionnelle)** : si la persistance doit survivre a `./scripts/stop.sh` + `./scripts/start.sh`, ajouter `-v "$(pwd)/data:/app/data"` (et l'equivalent dans `start.bat`) plutot que de laisser les donnees dans le conteneur.
+**Action (optional)**: if persistence should survive `./scripts/stop.sh` + `./scripts/start.sh`, add `-v "$(pwd)/data:/app/data"` (and the equivalent in `start.bat`) instead of leaving data inside the container.
 
-## Points positifs a noter
+## Positive notes
 
-- Aucune utilisation de `dangerouslySetInnerHTML` : le rendu Markdown-like du chat IA (`KanbanChatSidebar.tsx`) construit des elements React (`renderInline`), donc pas de vecteur XSS via les reponses du LLM meme si celui-ci est influencable par l'utilisateur.
-- Toutes les requetes SQL sont parametrees (`database.py`), aucune injection SQL possible.
-- `parse_structured_response` (`backend/ai.py`) est robuste face a la sloppiness connue des LLM (fences de code, JSON tronque, `cards` en array, `cardIds` absents) — bon exemple de gestion defensive **justifiee** par un besoin reel documente, contrairement a de la defensive programming gratuite.
-- Le `.env` n'est jamais copie dans l'image Docker (absent du `Dockerfile`, seulement passe via `--env-file` a l'execution) et reste hors du controle de version (`.gitignore`). Bonne hygiene de secrets.
-- La suite de tests backend couvre les 401 sur toutes les routes protegees, la persistance SQLite, et le parsing degrade de l'IA — bon niveau de confiance pour un MVP.
+- No use of `dangerouslySetInnerHTML`: the Markdown-like rendering of AI chat messages (`KanbanChatSidebar.tsx`) builds React elements (`renderInline`), so there is no XSS vector via LLM responses even though the LLM is user-influenceable.
+- All SQL queries are parameterized (`database.py`), so SQL injection is not possible.
+- `parse_structured_response` (`backend/ai.py`) is robust against known LLM sloppiness (code fences, truncated JSON, `cards` as an array, missing `cardIds`) — a good example of defensive handling that is **justified** by a documented real need, unlike gratuitous defensive programming.
+- `.env` is never copied into the Docker image (absent from the `Dockerfile`, only passed via `--env-file` at runtime) and stays out of version control (`.gitignore`). Good secret hygiene.
+- The backend test suite covers 401s on all protected routes, SQLite persistence, and degraded AI parsing — a solid confidence level for an MVP.
 
-## Recapitulatif des actions
+## Action summary
 
-| # | Priorite | Fichier | Action |
-|---|----------|---------|--------|
-| 1 | Haute | `frontend/tests/kanban.spec.ts` | Remplacer `any` par le type `Page` pour faire passer le lint |
-| 2 | Haute | `backend/models.py` | Ajouter une validation d'integrite referentielle `cardIds` <-> `cards` sur `BoardData` |
-| 3 | Moyenne | `backend/ai.py` | Logger l'echec de validation du board IA au lieu de l'avaler silencieusement |
-| 4 | Moyenne | `backend/main.py` | Retirer ou restreindre `allow_credentials=True` avec `allow_origins=["*"]` |
-| 5 | Basse | `backend/auth.py` | Rate limiting sur `/api/auth/login` si exposition au-dela de `localhost` |
-| 6 | Basse | `frontend/src/components/` | Completer les tests unitaires de `NewCardForm` et `KanbanColumn` |
-| 7 | Basse | `frontend/src/components/KanbanChatSidebar.tsx` | Tronquer l'historique envoye a l'API au lieu de tout envoyer |
-| 8 | Optionnelle | `scripts/start.sh` / `start.bat` | Ajouter un volume Docker pour la persistance SQLite si besoin |
+| # | Priority | File | Action |
+|---|----------|------|--------|
+| 1 | High | `frontend/tests/kanban.spec.ts` | Replace `any` with the `Page` type to fix the lint failure |
+| 2 | High | `backend/models.py` | Add referential integrity validation between `cardIds` and `cards` on `BoardData` |
+| 3 | Medium | `backend/ai.py` | Log AI board validation failures instead of swallowing them silently |
+| 4 | Medium | `backend/main.py` | Remove or restrict `allow_credentials=True` combined with `allow_origins=["*"]` |
+| 5 | Low | `backend/auth.py` | Rate limit `/api/auth/login` if exposed beyond `localhost` |
+| 6 | Low | `frontend/src/components/` | Add unit tests for `NewCardForm` and `KanbanColumn` |
+| 7 | Low | `frontend/src/components/KanbanChatSidebar.tsx` | Trim the chat history sent to the API instead of sending everything |
+| 8 | Optional | `scripts/start.sh` / `start.bat` | Add a Docker volume for SQLite persistence if needed |
