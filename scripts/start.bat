@@ -27,8 +27,10 @@ if exist .env (
     set ENV_FLAG=--env-file .env
 )
 
+if not exist data mkdir data
+
 echo Starting container %CONTAINER_NAME% on port %PORT%...
-docker run -d --name %CONTAINER_NAME% -p %PORT%:%PORT% %ENV_FLAG% %IMAGE_NAME%
+docker run -d --name %CONTAINER_NAME% -p %PORT%:%PORT% -v "%cd%\data:/app/data" %ENV_FLAG% %IMAGE_NAME%
 
 echo Application started successfully at http://localhost:%PORT%
 endlocal

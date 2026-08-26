@@ -11,6 +11,9 @@ type KanbanChatSidebarProps = {
   onClose: () => void;
 };
 
+// Mirrors the backend's history window (backend/ai.py) to avoid sending a payload the API discards
+const MAX_HISTORY_MESSAGES = 10;
+
 const SUGGESTIONS = [
   "Ajoute une carte 'Tests QA' dans Review",
   "Crée une tâche 'Optimiser la BDD' dans In Progress",
@@ -201,7 +204,10 @@ export const KanbanChatSidebar = ({
     );
 
     try {
-      const response = await sendAIChatMessage(updatedMessages, board);
+      const response = await sendAIChatMessage(
+        updatedMessages.slice(-MAX_HISTORY_MESSAGES),
+        board
+      );
       const durationMs = performance.now() - startTime;
       const durationSec = (durationMs / 1000).toFixed(2);
 

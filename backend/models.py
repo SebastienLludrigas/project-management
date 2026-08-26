@@ -1,5 +1,5 @@
 from typing import Dict, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class Card(BaseModel):
@@ -17,6 +17,16 @@ class Column(BaseModel):
 class BoardData(BaseModel):
     columns: List[Column]
     cards: Dict[str, Card]
+
+    @model_validator(mode="after")
+    def check_card_ids_exist(self) -> "BoardData":
+        for column in self.columns:
+            for card_id in column.cardIds:
+                if card_id not in self.cards:
+                    raise ValueError(
+                        f"Column '{column.id}' references unknown card id '{card_id}'"
+                    )
+        return self
 
 
 class ChatMessage(BaseModel):

@@ -1,6 +1,7 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 from main import app
+from auth import FAILED_LOGIN_ATTEMPTS, MAX_FAILED_LOGIN_ATTEMPTS
 
 
 @pytest.mark.asyncio
@@ -60,3 +61,31 @@ async def test_authenticated_me_flow():
         # After logout, token is invalidated
         after_logout_resp = await client.get("/api/auth/me", headers=headers)
         assert after_logout_resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_login_rate_limited_after_repeated_failures():
+    FAILED_LOGIN_ATTEMPTS.clear()
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        for _ in range(MAX_FAILED_LOGIN_ATTEMPTS):
+            resp = await client.post(
+                "/api/auth/login",
+                json={"username": "wrong_user", "password": "wrong_password"},
+            )
+            assert resp.status_code == 401
+
+        limited_resp = await client.post(
+            "/api/auth/login",
+            json={"username": "wrong_user", "password": "wrong_password"},
+        )
+        assert limited_resp.status_code == 429
+
+        # Correct credentials are also blocked while the client is rate limited
+        blocked_valid_resp = await client.post(
+            "/api/auth/login",
+            json={"username": "user", "password": "password"},
+        )
+        assert blocked_valid_resp.status_code == 429
+    FAILED_LOGIN_ATTEMPTS.clear()

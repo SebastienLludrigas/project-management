@@ -1,6 +1,6 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
-const login = async (page: any) => {
+const login = async (page: Page) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /welcome back/i })).toBeVisible();
   await page.getByLabel("Username").fill("user");

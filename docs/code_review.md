@@ -8,11 +8,13 @@ Method: full read-through of the source files, running the existing test suites 
 
 The application is a clean MVP Kanban board consistent with the spec in `AGENTS.md`. The structure faithfully follows the contract documented in `CLAUDE.md` (one JSON blob for the board, duplicated in three places, single-origin serving). The code is clean and free of over-engineering, and the existing test suite passes in full:
 
-- Backend: `uv run pytest` -> 16/16 tests passing
-- Frontend unit: `npm run test:unit` -> 17/17 tests passing
-- Frontend lint: `npm run lint` -> 1 error (see Action 1)
+- Backend: `uv run pytest` -> 16/16 tests passing (17/17 after Action 5's new test)
+- Frontend unit: `npm run test:unit` -> 17/17 tests passing (26/26 after Action 6's new tests)
+- Frontend lint: `npm run lint` -> 1 error (see Action 1; 0 errors after the fix)
 
 The most significant finding is not an active bug but a missing safeguard: nothing enforces that `columns[].cardIds` stays consistent with `cards`, neither on the backend (Pydantic) nor on the frontend at save time. Since the board is a single blob rewritten wholesale by both the PUT endpoint and the AI (which generates JSON freely), this is the most likely point of silent data corruption.
+
+**Update (2026-08-26): all 8 actions below have been implemented.** See the Status column in the Action summary table.
 
 ## Findings and actions
 
@@ -109,13 +111,13 @@ Only `KanbanBoard.test.tsx`, `KanbanChatSidebar.test.tsx`, `LoginForm.test.tsx`,
 
 ## Action summary
 
-| # | Priority | File | Action |
-|---|----------|------|--------|
-| 1 | High | `frontend/tests/kanban.spec.ts` | Replace `any` with the `Page` type to fix the lint failure |
-| 2 | High | `backend/models.py` | Add referential integrity validation between `cardIds` and `cards` on `BoardData` |
-| 3 | Medium | `backend/ai.py` | Log AI board validation failures instead of swallowing them silently |
-| 4 | Medium | `backend/main.py` | Remove or restrict `allow_credentials=True` combined with `allow_origins=["*"]` |
-| 5 | Low | `backend/auth.py` | Rate limit `/api/auth/login` if exposed beyond `localhost` |
-| 6 | Low | `frontend/src/components/` | Add unit tests for `NewCardForm` and `KanbanColumn` |
-| 7 | Low | `frontend/src/components/KanbanChatSidebar.tsx` | Trim the chat history sent to the API instead of sending everything |
-| 8 | Optional | `scripts/start.sh` / `start.bat` | Add a Docker volume for SQLite persistence if needed |
+| # | Priority | File | Action | Status |
+|---|----------|------|--------|--------|
+| 1 | High | `frontend/tests/kanban.spec.ts` | Replace `any` with the `Page` type to fix the lint failure | Done |
+| 2 | High | `backend/models.py` | Add referential integrity validation between `cardIds` and `cards` on `BoardData` | Done |
+| 3 | Medium | `backend/ai.py` | Log AI board validation failures instead of swallowing them silently | Done |
+| 4 | Medium | `backend/main.py` | Remove or restrict `allow_credentials=True` combined with `allow_origins=["*"]` | Done |
+| 5 | Low | `backend/auth.py` | Rate limit `/api/auth/login` if exposed beyond `localhost` | Done |
+| 6 | Low | `frontend/src/components/` | Add unit tests for `NewCardForm` and `KanbanColumn` | Done |
+| 7 | Low | `frontend/src/components/KanbanChatSidebar.tsx` | Trim the chat history sent to the API instead of sending everything | Done |
+| 8 | Optional | `scripts/start.sh` / `start.bat` | Add a Docker volume for SQLite persistence if needed | Done |

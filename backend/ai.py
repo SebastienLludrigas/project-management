@@ -180,7 +180,8 @@ def parse_structured_response(raw_text: Optional[str]) -> AIChatResponse:
 
         try:
             validated_board = BoardData.model_validate(board_data)
-        except Exception:
+        except Exception as exc:
+            print(f"[AI Chat] board validation failed: {exc}")
             validated_board = None
 
     return AIChatResponse(message=message or raw_text, board=validated_board)

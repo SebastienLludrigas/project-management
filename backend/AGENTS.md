@@ -18,10 +18,18 @@ backend/
 └── tests/
     ├── test_ai_chat.py        # Tests for AI chat endpoint and board mutations
     ├── test_ai_connectivity.py# Tests for OpenRouter connectivity
-    ├── test_auth.py           # Tests for user authentication
+    ├── test_auth.py           # Tests for user authentication and login rate limiting
     ├── test_board.py          # Tests for Kanban board CRUD and persistence
     └── test_health.py         # Tests for health endpoint and static serving
 ```
+
+## Login rate limiting
+
+`POST /api/auth/login` tracks failed attempts per client IP in-memory (`FAILED_LOGIN_ATTEMPTS` in `auth.py`). After `MAX_FAILED_LOGIN_ATTEMPTS` (5) failures within `FAILED_LOGIN_WINDOW_SECONDS` (60), further attempts from that IP get `429 Too Many Requests` until the window rolls over. Like `ACTIVE_TOKENS`, this state is in-memory and resets on restart.
+
+## Board referential integrity
+
+`BoardData` in `models.py` validates that every `cardId` referenced by a column exists in `cards` (see `docs/DATABASE.md`). This applies to both `PUT /api/board` and AI-generated boards.
 
 ## Running & Testing
 

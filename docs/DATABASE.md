@@ -130,3 +130,4 @@ The `data` column in `boards` stores a JSON string matching the TypeScript `Boar
 1. **Auto-creation**: If the database file does not exist when the backend initializes, the tables and triggers are created automatically.
 2. **Default Seeding**: When a user accesses their board for the first time, a default `BoardData` structure (5 initial columns and sample cards matching `initialData`) is seeded for that `user_id`.
 3. **Pydantic Validation**: All board reads and writes via API endpoints (`GET /api/board`, `PUT /api/board`) are validated against Pydantic models in Python before querying or updating SQLite.
+4. **Referential Integrity**: `BoardData` rejects any column that references a `cardId` not present in `cards` (a model validator in `backend/models.py` enforces `cardIds ⊆ cards.keys()`). A card present in `cards` but not referenced by any column (an orphan) is allowed, since it does not break rendering.

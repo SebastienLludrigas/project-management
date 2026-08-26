@@ -30,7 +30,9 @@ if [ -f ".env" ]; then
     ENV_FLAG="--env-file .env"
 fi
 
+mkdir -p "$(pwd)/data"
+
 echo "Starting container ${CONTAINER_NAME} on port ${PORT}..."
-docker run -d --name "${CONTAINER_NAME}" -p "${PORT}:${PORT}" ${ENV_FLAG} "${IMAGE_NAME}"
+docker run -d --name "${CONTAINER_NAME}" -p "${PORT}:${PORT}" -v "$(pwd)/data:/app/data" ${ENV_FLAG} "${IMAGE_NAME}"
 
 echo "Application started successfully at http://localhost:${PORT}"

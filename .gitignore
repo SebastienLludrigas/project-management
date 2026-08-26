@@ -135,6 +135,9 @@ ENV/
 env.bak/
 venv.bak/
 
+# SQLite data volume mounted by scripts/start.sh and start.bat
+/data/
+
 # Spyder project settings
 .spyderproject
 .spyproject
